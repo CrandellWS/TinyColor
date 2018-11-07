@@ -38,7 +38,7 @@ function tinycolor (color, opts) {
     this._g = rgb.g,
     this._b = rgb.b,
     this._a = rgb.a,
-    this._roundA = mathRound(100*this._a) / 100,
+    this._roundA = mathRound(1000*this._a) / 1000,
     this._format = opts.format || rgb.format;
     this._gradientType = opts.gradientType;
 
@@ -93,8 +93,13 @@ tinycolor.prototype = {
     },
     setAlpha: function(value) {
         this._a = boundAlpha(value);
-        this._roundA = mathRound(100*this._a) / 100;
+        this._roundA = mathRound(1000*this._a) / 1000;
         return this;
+    },
+    toArgbString: function() {
+        return (typeof this._a === "undefined" || this._a == 1) ?
+          "argb(1, "  + mathRound(this._r) + ", " + mathRound(this._g) + ", " + mathRound(this._b) + ")" :
+          "argb(" + parseIntFromHex(convertDecimalToHex(this._a)) + ", " + mathRound(this._r) + ", " + mathRound(this._g) + ", " + mathRound(this._b) + ")";
     },
     toHsv: function() {
         var hsv = rgbToHsv(this._r, this._g, this._b);
@@ -142,6 +147,11 @@ tinycolor.prototype = {
     toRgbString: function() {
         return (typeof this._a === "undefined" || this._a == 1) ?
           "rgb("  + mathRound(this._r) + ", " + mathRound(this._g) + ", " + mathRound(this._b) + ")" :
+          "rgba(" + mathRound(this._r) + ", " + mathRound(this._g) + ", " + mathRound(this._b) + ", " + this._roundA + ")";
+    },
+    toRgbaString: function() {
+        return (typeof this._a === "undefined" || this._a == 1) ?
+          "rgba("  + mathRound(this._r) + ", " + mathRound(this._g) + ", " + mathRound(this._b) + ", 1)" :
           "rgba(" + mathRound(this._r) + ", " + mathRound(this._g) + ", " + mathRound(this._b) + ", " + this._roundA + ")";
     },
     toPercentageRgb: function() {
@@ -365,8 +375,8 @@ function inputToRGB(color) {
         a: a
     };
 }
-
-
+    
+    
 // Conversion Functions
 // --------------------
 
@@ -1079,6 +1089,7 @@ var matchers = (function() {
 
     return {
         CSS_UNIT: new RegExp(CSS_UNIT),
+        argb: new RegExp("argb" + PERMISSIVE_MATCH4),
         rgb: new RegExp("rgb" + PERMISSIVE_MATCH3),
         rgba: new RegExp("rgba" + PERMISSIVE_MATCH4),
         hsl: new RegExp("hsl" + PERMISSIVE_MATCH3),
@@ -1119,6 +1130,9 @@ function stringInputToObject(color) {
     // Just return an object and let the conversion functions handle that.
     // This way the result will be the same whether the tinycolor is initialized with string or object.
     var match;
+    if ((match = matchers.argb.exec(color))) {
+        return { a: (match[1] / 255), r: match[2], g: match[3], b: match[4] };
+    }
     if ((match = matchers.rgb.exec(color))) {
         return { r: match[1], g: match[2], b: match[3] };
     }
